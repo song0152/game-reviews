@@ -1,6 +1,7 @@
 <template>
   <main class="container">
-    <h1>Game Reviews</h1>
+    <h1>Our Game Reviews</h1>
+
 
     <div v-if="loading" class="status">Loading reviews...</div>
     <div v-else-if="filtered.length === 0" class="status">No reviews found.</div>
