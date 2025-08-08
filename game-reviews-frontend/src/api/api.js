@@ -1,26 +1,26 @@
-import axios from 'axios';
+import axios from 'axios'
 
-// Use env var; fallback to local Strapi
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:1337';
+const API_URL = import.meta.env.VITE_API_URL;
 
 export const api = axios.create({
-  baseURL,
+  baseURL: `${API_URL}/api`,
   headers: { 'Content-Type': 'application/json' },
-});
+})
 
 export function getReviews(params = {}) {
-  // include cover image
-  return api.get('/api/reviews', {
+  return api.get('/reviews', {
     params: { populate: 'coverImage', sort: 'publishedAt:desc', ...params },
-  });
+  })
 }
 
 export function getReviewById(id) {
-  return api.get(`/api/reviews/${id}`, { params: { populate: 'coverImage' } });
+  return api.get(`/reviews/${id}`, {
+    params: { populate: 'coverImage' },
+  })
 }
 
 export function toMediaUrl(path) {
-  if (!path) return '';
-  if (path.startsWith('http')) return path;
-  return `${baseURL}${path}`;
+  if (!path) return ''
+  if (path.startsWith('http')) return path
+  return `${API_URL}${path}`
 }

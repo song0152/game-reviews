@@ -1,0 +1,8 @@
+[build]
+  base = "game-reviews-frontend"
+  command = "npm ci && npm run build"
+  publish = "game-reviews-frontend/dist"
+
+[build.environment]
+  NODE_VERSION = "18.19.0"   # 或 "20.12.2"
+  VITE_API_URL = "https://game-reviews-cms.onrender.com"
