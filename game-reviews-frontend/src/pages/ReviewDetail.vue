@@ -26,7 +26,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { getReviewById } from '../api/api';
+import { getReviewByIdOrDoc } from '../api/api';
 import { normalizeReview } from '../utils/normalize';
 
 const route = useRoute();
@@ -36,19 +36,25 @@ const review = ref(null);
 async function load() {
   loading.value = true;
   try {
-    const id = route.params.id;
-    const { data } = await getReviewById(id);
+    const key = route.params.id; 
+    const { data } = await getReviewByIdOrDoc(key);
     review.value = data ? normalizeReview(data) : null;
-  } catch (e) {
-    console.error('[detail] load error', e);
-    review.value = null;
+
+    if (!review.value) {
+      const json = await fetch('/data/reviews.json').then(r => r.json());
+      const list = Array.isArray(json?.data) ? json.data : [];
+      const found = list.find(it =>
+        String(it?.id) === String(key) || String(it?.documentId || it?.attributes?.documentId) === String(key)
+      );
+      review.value = found ? normalizeReview(found) : null;
+    }
   } finally {
     loading.value = false;
   }
 }
-
 onMounted(load);
 </script>
+
 
 <style scoped>
 .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }

@@ -31,29 +31,42 @@ async function fetchWithFallback(apiPath, fallback) {
 
 export async function getReviews(params = {}) {
   const search = new URLSearchParams({
+    fields: 'id,documentId',
     populate: 'coverImage',
     sort: 'publishedAt:desc',
+    'pagination[pageSize]': 100,
     ...params,
   }).toString();
+
   return fetchWithFallback(`/reviews?${search}`, '/data/reviews.json');
 }
 
-export async function getReviewById(id) {
+export async function getReviewByIdOrDoc(idOrDoc) {
+  const key = String(idOrDoc || '');
+  const isNumeric = /^\d+$/.test(key);
+
   try {
-    const { data } = await api.get(`/reviews/${id}`, {
-      params: { populate: 'coverImage' },
+    if (isNumeric) {
+      const { data } = await api.get(`/reviews/${key}`, { params: { populate: 'coverImage' } });
+      return { data: data?.data ?? null };
+    }
+    const { data } = await api.get('/reviews', {
+      params: {
+        populate: 'coverImage',
+        'filters[documentId][$eq]': key,
+        'pagination[pageSize]': 1,
+      },
     });
-    console.log('[api] use LIVE detail', id);
-    return { data: data?.data ?? null };
+    const item = Array.isArray(data?.data) ? data.data[0] : null;
+    return { data: item ?? null };
   } catch (e) {
     try {
-      const json = await fetch('/data/reviews.json').then((r) => r.json());
-      const item = (json?.data || []).find((it) => String(it?.id) === String(id));
-      if (item) {
-        console.log('[api] use CACHE detail', id);
-        return { data: item };
-      }
-      return { data: null };
+      const json = await fetch('/data/reviews.json').then(r => r.json());
+      const list = Array.isArray(json?.data) ? json.data : [];
+      const found = list.find(it =>
+        isNumeric ? String(it?.id) === key : String(it?.documentId || it?.attributes?.documentId) === key
+      );
+      return { data: found ?? null };
     } catch (e2) {
       console.error('[api detail] live & cache failed', e, e2);
       return { data: null };
@@ -63,6 +76,7 @@ export async function getReviewById(id) {
 
 export function toMediaUrl(path) {
   if (!path) return '';
-  if (String(path).startsWith('http')) return path;
-  return `${API_URL}${path}`;
+  const p = String(path);
+  if (p.startsWith('http')) return p;
+  return `${API_URL}${p}`;
 }
