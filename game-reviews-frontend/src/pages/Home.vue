@@ -28,7 +28,7 @@ const loading = ref(false);
 async function load() {
   loading.value = true;
   try {
-    const { data } = await getReviews(); 
+    const { data } = await getReviews();
     raw.value = Array.isArray(data) ? data : [];
     reviews.value = raw.value.map((r) => {
       try {
@@ -74,8 +74,6 @@ const filtered = computed(() => {
 
 watch(() => [route.query.q, route.params.platform], () => {}, { flush: 'post' });
 </script>
-
-
 
 <style scoped>
 .container { max-width: var(--container); margin: 0 auto; padding: 20px 16px; }

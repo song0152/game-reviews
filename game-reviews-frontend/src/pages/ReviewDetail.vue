@@ -50,7 +50,6 @@ async function load() {
 onMounted(load);
 </script>
 
-
 <style scoped>
 .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
 .status { color: #777; margin: 24px 0; }

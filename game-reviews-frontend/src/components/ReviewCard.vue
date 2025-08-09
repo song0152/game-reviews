@@ -1,6 +1,7 @@
 <template>
   <RouterLink
-    :to="{ name: 'review', params: { id: r.id } }"
+    v-if="r && r.id != null"
+    :to="{ name: 'review', params: { id: String(r.id) } }"
     class="card"
     aria-label="Open review detail"
   >
@@ -14,18 +15,32 @@
       </div>
     </div>
   </RouterLink>
+
+  <div v-else class="card">
+    <img v-if="r?.cover" :src="r.cover" alt="" class="cover" />
+    <div class="body">
+      <h3 class="title">{{ r?.title || 'Untitled' }}</h3>
+      <p class="excerpt">{{ shortExcerpt }}</p>
+      <div class="meta">
+        <span v-if="r?.platform">{{ r.platform }}</span>
+        <span v-if="r?.rating">⭐ {{ r.rating }}</span>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import { normalizeReview } from '../utils/normalize';
 
-const props = defineProps({ review: { type: Object, default: () => ({}) } });
-const r = computed(() => normalizeReview(props.review));
+const props = defineProps({
+  review: { type: Object, required: true },
+});
+
+const r = computed(() => props.review);
 
 const shortExcerpt = computed(() => {
-  const t = String(r.value.excerpt || '');
+  const t = String(r.value?.excerpt || '');
   return t.length > 120 ? `${t.slice(0, 120)}…` : t;
 });
 </script>
