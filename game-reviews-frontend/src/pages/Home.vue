@@ -28,31 +28,26 @@ const loading = ref(false);
 async function load() {
   loading.value = true;
   try {
-    const { data } = await getReviews();
-    raw.value = data?.data || [];
+    const res = await getReviews();
+
+    const list = Array.isArray(res) ? res : (res?.data ?? []);
+
+    raw.value = list;
     reviews.value = raw.value.map(normalizeReview);
+
+    console.log('[home] loaded', { count: raw.value.length });
+  } catch (e) {
+    console.error('[home] load error', e);
+    raw.value = [];
+    reviews.value = [];
   } finally {
     loading.value = false;
   }
 }
 onMounted(load);
 
-const filtered = computed(() => {
-  const q = (route.query.q?.toString() || '').toLowerCase();
-  const plat = route.params.platform ? route.params.platform.toString().toLowerCase() : 'all';
-
-  return reviews.value.filter((r) => {
-    const hitQ = !q || [r.title, r.platform, String(r.rating)].some(v => String(v || '').toLowerCase().includes(q));
-
-    const pText = String(r.platform || '').toLowerCase();
-    const hitP = plat === 'all' || !plat ? true : pText.includes(plat);
-
-    return hitQ && hitP;
-  });
-});
-
-watch(() => [route.query.q, route.params.platform], () => {}, { flush: 'post' });
 </script>
+
 
 <style scoped>
 .container { max-width: var(--container); margin: 0 auto; padding: 20px 16px; }

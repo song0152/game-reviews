@@ -5,53 +5,55 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://game-reviews-cms.onrend
 export const api = axios.create({
   baseURL: `${API_URL}/api`,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 8000, 
+  timeout: 8000,
 });
 
-/**
- * 在线优先，失败则回退到本地静态 JSON
- * @param {string} apiPath    - 线上 API 路径（/reviews?...）
- * @param {string} fallback   - 本地 JSON 路径（/data/reviews.json）
- * @returns {Promise<any>}    - 返回 JSON（与 Strapi 响应一致）
- */
 async function fetchWithFallback(apiPath, fallback) {
   try {
     const { data } = await api.get(apiPath);
-    return data; // { data, meta }
-  } catch (err) {
+    const list = Array.isArray(data?.data) ? data.data : [];
+    console.log(`[api] use LIVE: ${apiPath} -> ${list.length} items`);
+    return { data: list, meta: data?.meta, source: 'live' };
+  } catch (e) {
     try {
       const res = await fetch(fallback, { headers: { Accept: 'application/json' } });
-      if (!res.ok) throw new Error(`Fallback ${fallback} ${res.status}`);
-      return await res.json();
-    } catch (fallbackErr) {
-      throw err;
+      if (!res.ok) throw new Error(`fallback ${fallback} ${res.status}`);
+      const json = await res.json();
+      const list = Array.isArray(json?.data) ? json.data : [];
+      console.log(`[api] use CACHE: ${fallback} -> ${list.length} items`);
+      return { data: list, meta: json?.meta, source: 'cache' };
+    } catch (e2) {
+      console.error('[api] both live & cache failed', e, e2);
+      return { data: [], meta: {}, source: 'none' };
     }
   }
 }
 
-
-export function getReviews(params = {}) {
+export async function getReviews(params = {}) {
   const search = new URLSearchParams({
     populate: 'coverImage',
     sort: 'publishedAt:desc',
     ...params,
   }).toString();
-
-  return fetchWithFallback(`/reviews?${search}`, '/data/reviews.json');
+  const res = await fetchWithFallback(`/reviews?${search}`, '/data/reviews.json');
+  return res.data;
 }
-
 
 export async function getReviewById(id) {
   try {
     const { data } = await api.get(`/reviews/${id}`, {
       params: { populate: 'coverImage' },
     });
-    return data; // { data, meta? }
-  } catch (err) {
-    const list = await fetch('/data/reviews.json').then((r) => r.json());
-    const found = list?.data?.find((it) => String(it.id) === String(id));
-    if (found) return { data: found, meta: list.meta };
-    throw err;
+    console.log('[api] use LIVE detail', id);
+    return data?.data;
+  } catch (e) {
+    const res = await fetch('/data/reviews.json').then((r) => r.json());
+    const item = (res?.data || []).find((it) => String(it.id) === String(id));
+    if (item) {
+      console.log('[api] use CACHE detail', id);
+      return item;
+    }
+    throw e;
   }
 }
 
