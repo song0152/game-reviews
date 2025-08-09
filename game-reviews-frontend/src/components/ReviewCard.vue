@@ -36,6 +36,13 @@ const badgeClass = computed(() => {
   if (val >= 70) return 'score-good';
   return 'score-mixed';
 });
+
+defineProps({
+  review: {
+    type: Object,
+    default: () => ({ title: '', excerpt: '', cover: '', platform: '', rating: '' })
+  }
+});
 </script>
 
 <style scoped>
