@@ -1,36 +1,32 @@
 <template>
   <article class="card">
-    <img v-if="cover" :src="cover" alt="" class="cover" />
+    <img v-if="r.cover" :src="r.cover" alt="" class="cover" />
     <div class="body">
-      <h3 class="title">{{ title }}</h3>
+      <h3 class="title">{{ r.title }}</h3>
       <p class="excerpt">{{ shortExcerpt }}</p>
 
       <div class="meta">
-        <span v-if="platform">{{ platform }}</span>
-        <span v-if="rating">⭐ {{ rating }}</span>
+        <span v-if="r.platform">{{ r.platform }}</span>
+        <span v-if="r.rating">⭐ {{ r.rating }}</span>
       </div>
     </div>
   </article>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed } from 'vue'
+import { normalizeReview } from '../utils/normalize'
 
 const props = defineProps({
-  review: { type: Object, default: () => ({}) },
-});
+  review: { type: Object, default: () => ({}) }
+})
 
-const title    = computed(() => String(props.review?.title ?? ''));
-const excerpt  = computed(() => String(props.review?.excerpt ?? ''));
-const platform = computed(() => String(props.review?.platform ?? ''));
-const rating   = computed(() => props.review?.rating ?? '');
-const cover    = computed(() => String(props.review?.cover ?? ''));
+const r = computed(() => normalizeReview(props.review))
 
 const shortExcerpt = computed(() => {
-  return excerpt.value.length > 120
-    ? `${excerpt.value.slice(0, 120)}…`
-    : excerpt.value;
-});
+  const text = String(r.value.excerpt || '')
+  return text.length > 120 ? `${text.slice(0, 120)}…` : text
+})
 </script>
 
 <style scoped>
