@@ -8,6 +8,12 @@ export const api = axios.create({
   timeout: 8000,
 });
 
+export function toMediaUrl(path) {
+  if (!path) return '';
+  if (String(path).startsWith('http')) return path;
+  return `${API_URL}${path}`;
+}
+
 async function fetchWithFallback(apiPath, fallback) {
   try {
     const { data } = await api.get(apiPath);
@@ -41,42 +47,38 @@ export async function getReviews(params = {}) {
   return fetchWithFallback(`/reviews?${search}`, '/data/reviews.json');
 }
 
-export async function getReviewByIdOrDoc(idOrDoc) {
-  const key = String(idOrDoc || '');
-  const isNumeric = /^\d+$/.test(key);
-
+export async function getReviewById(documentId) {
   try {
-    if (isNumeric) {
-      const { data } = await api.get(`/reviews/${key}`, { params: { populate: 'coverImage' } });
-      return { data: data?.data ?? null };
-    }
     const { data } = await api.get('/reviews', {
       params: {
         populate: 'coverImage',
-        'filters[documentId][$eq]': key,
+        'filters[documentId][$eq]': documentId,
         'pagination[pageSize]': 1,
       },
+      paramsSerializer: (p) => new URLSearchParams(p).toString(),
     });
+
     const item = Array.isArray(data?.data) ? data.data[0] : null;
+
+    if (!item && /^\d+$/.test(String(documentId))) {
+      const { data: byNumeric } = await api.get(`/reviews/${documentId}`, {
+        params: { populate: 'coverImage' },
+      });
+      return { data: byNumeric?.data ?? null };
+    }
+
     return { data: item ?? null };
   } catch (e) {
     try {
-      const json = await fetch('/data/reviews.json').then(r => r.json());
+      const json = await fetch('/data/reviews.json').then((r) => r.json());
       const list = Array.isArray(json?.data) ? json.data : [];
-      const found = list.find(it =>
-        isNumeric ? String(it?.id) === key : String(it?.documentId || it?.attributes?.documentId) === key
-      );
-      return { data: found ?? null };
+      const item =
+        list.find((it) => String(it?.documentId) === String(documentId)) ||
+        list.find((it) => String(it?.id) === String(documentId));
+      return { data: item ?? null };
     } catch (e2) {
       console.error('[api detail] live & cache failed', e, e2);
       return { data: null };
     }
   }
-}
-
-export function toMediaUrl(path) {
-  if (!path) return '';
-  const p = String(path);
-  if (p.startsWith('http')) return p;
-  return `${API_URL}${p}`;
 }

@@ -1,24 +1,29 @@
 import { toMediaUrl } from '../api/api';
 
-export function normalizeReview(input) {
-  const src = input?.attributes ? { id: input.id, documentId: input.documentId, ...input.attributes } : (input || {});
+export function normalizeReview(item = {}) {
+  const attrs = item.attributes ? item.attributes : item;
 
-  const img = src?.coverImage?.data?.attributes || src?.coverImage?.attributes || null;
-  const rawUrl =
-    img?.url ||
-    img?.formats?.medium?.url ||
-    img?.formats?.large?.url ||
-    img?.formats?.thumbnail?.url ||
-    null;
+  const id =
+    item.documentId ||
+    attrs.documentId ||
+    item.id ||
+    attrs.id;
+
+  const img =
+    attrs?.coverImage?.data?.attributes?.url || 
+    attrs?.coverImage?.url ||                   
+    item?.coverImage?.data?.attributes?.url || 
+    item?.coverImage?.url ||
+    attrs?.cover?.url;                        
 
   return {
-    id: src.id ?? null,
-    documentId: src.documentId ?? null,
-    title: src.title ?? '',
-    platform: src.platform ?? '',
-    rating: src.rating ?? '',
-    excerpt: src.excerpt ?? '',
-    publishedAt: src.publishedAt ?? null,
-    cover: rawUrl ? toMediaUrl(rawUrl) : '',
+    id,              
+    documentId: id,
+    title: attrs.title ?? '',
+    excerpt: attrs.excerpt ?? '',
+    platform: attrs.platform ?? '',
+    rating: attrs.rating ?? '',
+    publishedAt: attrs.publishedAt ?? item.publishedAt ?? '',
+    cover: toMediaUrl(img),
   };
 }

@@ -2,12 +2,11 @@
   <main class="container">
     <h1>Our Game Reviews</h1>
 
-
     <div v-if="loading" class="status">Loading reviews...</div>
     <div v-else-if="filtered.length === 0" class="status">No reviews found.</div>
 
     <section class="grid">
-      <ReviewCard v-for="r in filtered" :key="r.id" :review="r" />
+      <ReviewCard v-for="r in filtered" :key="r.documentId || r.id" :review="r" />
     </section>
   </main>
 </template>
@@ -28,17 +27,10 @@ const loading = ref(false);
 async function load() {
   loading.value = true;
   try {
-    const { data } = await getReviews();
-    raw.value = Array.isArray(data) ? data : [];
-    reviews.value = raw.value.map((r) => {
-      try {
-        return normalizeReview(r);
-      } catch (e) {
-        console.error('[normalize] fail for', r, e);
-        return null;
-      }
-    }).filter(Boolean);
-
+    const res = await getReviews();
+    const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    raw.value = list.map((it) => normalizeReview(it));
+    reviews.value = raw.value;
     console.log('[home] loaded:', reviews.value.length, 'items');
   } catch (e) {
     console.error('[home] load error', e);
@@ -61,12 +53,15 @@ const filtered = computed(() => {
     const platform = r?.platform ?? '';
     const rating = r?.rating ?? '';
 
-    const hitQ = !q || [title, platform, String(rating)]
-      .some(v => String(v || '').toLowerCase().includes(q));
+    const hitQ =
+      !q ||
+      [title, platform, String(rating)]
+        .some(v => String(v || '').toLowerCase().includes(q));
 
-    const hitP = plat === 'all' || !plat
-      ? true
-      : String(platform).toLowerCase().includes(plat);
+    const hitP =
+      plat === 'all' || !plat
+        ? true
+        : String(platform).toLowerCase().includes(plat);
 
     return hitQ && hitP;
   });
@@ -87,4 +82,3 @@ watch(() => [route.query.q, route.params.platform], () => {}, { flush: 'post' })
 @media (max-width: 360px) { .grid { gap: 12px; } }
 .status { color: var(--muted); margin: 16px 0; }
 </style>
-

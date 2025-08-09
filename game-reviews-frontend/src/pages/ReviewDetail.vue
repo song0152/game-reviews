@@ -1,5 +1,7 @@
 <template>
   <main class="container">
+    <button class="back" @click="goBack" aria-label="Back">← Back</button>
+
     <div v-if="loading" class="status">Loading…</div>
     <div v-else-if="!review" class="status">Review not found.</div>
 
@@ -25,29 +27,26 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
-import { getReviewByIdOrDoc } from '../api/api';
+import { useRoute, useRouter } from 'vue-router';
+import { getReviewById } from '../api/api';
 import { normalizeReview } from '../utils/normalize';
 
 const route = useRoute();
+const router = useRouter();
 const loading = ref(false);
 const review = ref(null);
+
+function goBack() {
+  if (window.history.length > 1) router.back();
+  else router.push({ name: 'home' });
+}
 
 async function load() {
   loading.value = true;
   try {
-    const key = route.params.id; 
-    const { data } = await getReviewByIdOrDoc(key);
+    const id = route.params.id;
+    const { data } = await getReviewById(id);
     review.value = data ? normalizeReview(data) : null;
-
-    if (!review.value) {
-      const json = await fetch('/data/reviews.json').then(r => r.json());
-      const list = Array.isArray(json?.data) ? json.data : [];
-      const found = list.find(it =>
-        String(it?.id) === String(key) || String(it?.documentId || it?.attributes?.documentId) === String(key)
-      );
-      review.value = found ? normalizeReview(found) : null;
-    }
   } finally {
     loading.value = false;
   }
@@ -55,9 +54,9 @@ async function load() {
 onMounted(load);
 </script>
 
-
 <style scoped>
 .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+.back { margin: 4px 0 12px; background: none; border: none; color: #666; cursor: pointer; }
 .status { color: #777; margin: 24px 0; }
 .detail { background: #fff; border-radius: 16px; box-shadow: 0 6px 22px rgba(0,0,0,.06); overflow: hidden; }
 .hero { width: 100%; max-height: 420px; object-fit: cover; display: block; }
