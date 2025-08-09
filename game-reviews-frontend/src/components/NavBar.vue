@@ -79,7 +79,7 @@ function isActive(val) {
 .container { max-width: 1100px; margin: 0 auto; padding: 10px 16px; }
 
 .brand { display: inline-flex; align-items: center; text-decoration: none; }
-.logo  { height: 32px; width: auto; display: block; }
+.logo  { height: 108px; width: auto; display: block; }
 
 .menu {
   display: flex; gap: 10px; list-style: none; margin: 0; padding: 0;
