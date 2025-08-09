@@ -28,21 +28,16 @@ const loading = ref(false);
 async function load() {
   loading.value = true;
   try {
-    const res = await getReviews();
-
-    const list = Array.isArray(res) ? res : (res?.data ?? []);
-    raw.value = Array.isArray(list) ? list : [];
-
-    reviews.value = raw.value
-      .map((r) => {
-        try {
-          return normalizeReview(r);
-        } catch (e) {
-          console.error('[normalize] fail for', r, e);
-          return null;
-        }
-      })
-      .filter(Boolean);
+    const { data } = await getReviews(); 
+    raw.value = Array.isArray(data) ? data : [];
+    reviews.value = raw.value.map((r) => {
+      try {
+        return normalizeReview(r);
+      } catch (e) {
+        console.error('[normalize] fail for', r, e);
+        return null;
+      }
+    }).filter(Boolean);
 
     console.log('[home] loaded:', reviews.value.length, 'items');
   } catch (e) {
@@ -66,15 +61,12 @@ const filtered = computed(() => {
     const platform = r?.platform ?? '';
     const rating = r?.rating ?? '';
 
-    const hitQ =
-      !q ||
-      [title, platform, String(rating)]
-        .some(v => String(v || '').toLowerCase().includes(q));
+    const hitQ = !q || [title, platform, String(rating)]
+      .some(v => String(v || '').toLowerCase().includes(q));
 
-    const hitP =
-      plat === 'all' || !plat
-        ? true
-        : String(platform).toLowerCase().includes(plat);
+    const hitP = plat === 'all' || !plat
+      ? true
+      : String(platform).toLowerCase().includes(plat);
 
     return hitQ && hitP;
   });
@@ -82,6 +74,7 @@ const filtered = computed(() => {
 
 watch(() => [route.query.q, route.params.platform], () => {}, { flush: 'post' });
 </script>
+
 
 
 <style scoped>

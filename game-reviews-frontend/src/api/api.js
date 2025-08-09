@@ -5,7 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://game-reviews-cms.onrend
 export const api = axios.create({
   baseURL: `${API_URL}/api`,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 8000,
+  timeout: 8000, 
 });
 
 async function fetchWithFallback(apiPath, fallback) {
@@ -35,8 +35,8 @@ export async function getReviews(params = {}) {
     sort: 'publishedAt:desc',
     ...params,
   }).toString();
-  const res = await fetchWithFallback(`/reviews?${search}`, '/data/reviews.json');
-  return res.data;
+
+  return await fetchWithFallback(`/reviews?${search}`, '/data/reviews.json');
 }
 
 export async function getReviewById(id) {
@@ -45,15 +45,20 @@ export async function getReviewById(id) {
       params: { populate: 'coverImage' },
     });
     console.log('[api] use LIVE detail', id);
-    return data?.data;
+    return { data: data?.data ?? null };
   } catch (e) {
-    const res = await fetch('/data/reviews.json').then((r) => r.json());
-    const item = (res?.data || []).find((it) => String(it.id) === String(id));
-    if (item) {
-      console.log('[api] use CACHE detail', id);
-      return item;
+    try {
+      const res = await fetch('/data/reviews.json');
+      const json = await res.json();
+      const item = (json?.data || []).find((it) => String(it.id) === String(id)) || null;
+      if (item) {
+        console.log('[api] use CACHE detail', id);
+        return { data: item };
+      }
+      return { data: null };
+    } catch (e2) {
+      return { data: null };
     }
-    throw e;
   }
 }
 
