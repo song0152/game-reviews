@@ -1,29 +1,23 @@
 import { toMediaUrl } from '../api/api';
 
-export function normalizeReview(item = {}) {
-  const attrs = item.attributes ? item.attributes : item;
+export function normalizeReview(raw) {
+  if (!raw) return null;
+  const row = raw.attributes ? raw : { attributes: raw, id: raw.id, documentId: raw.documentId };
 
-  const id =
-    item.documentId ||
-    attrs.documentId ||
-    item.id ||
-    attrs.id;
-
-  const img =
-    attrs?.coverImage?.data?.attributes?.url || 
-    attrs?.coverImage?.url ||                   
-    item?.coverImage?.data?.attributes?.url || 
-    item?.coverImage?.url ||
-    attrs?.cover?.url;                        
+  const a = row.attributes || {};
+  const cover = a.coverImage?.data?.attributes?.url
+    || a.coverImage?.url
+    || a.cover?.url;
 
   return {
-    id,              
-    documentId: id,
-    title: attrs.title ?? '',
-    excerpt: attrs.excerpt ?? '',
-    platform: attrs.platform ?? '',
-    rating: attrs.rating ?? '',
-    publishedAt: attrs.publishedAt ?? item.publishedAt ?? '',
-    cover: toMediaUrl(img),
+    id: row.documentId || row.id,
+    legacyId: row.id,
+    title: a.title || '',
+    platform: a.platform || '',
+    rating: a.rating ?? null,
+    excerpt: a.excerpt || '',
+    publishedAt: a.publishedAt || null,
+    cover: toMediaUrl(cover || ''),
+    content: a.content || null,
   };
 }

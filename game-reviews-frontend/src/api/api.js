@@ -5,14 +5,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://game-reviews-cms.onrend
 export const api = axios.create({
   baseURL: `${API_URL}/api`,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 8000,
+  timeout: 10000,
 });
-
-export function toMediaUrl(path) {
-  if (!path) return '';
-  if (String(path).startsWith('http')) return path;
-  return `${API_URL}${path}`;
-}
 
 async function fetchWithFallback(apiPath, fallback) {
   try {
@@ -35,50 +29,46 @@ async function fetchWithFallback(apiPath, fallback) {
   }
 }
 
-export async function getReviews(params = {}) {
-  const search = new URLSearchParams({
-    fields: 'id,documentId',
+export async function getReviews(extra = {}) {
+  const params = new URLSearchParams({
+    fields: 'id,documentId,title,platform,rating,excerpt,publishedAt',
     populate: 'coverImage',
     sort: 'publishedAt:desc',
     'pagination[pageSize]': 100,
-    ...params,
+    ...extra,
   }).toString();
-
-  return fetchWithFallback(`/reviews?${search}`, '/data/reviews.json');
+  return fetchWithFallback(`/reviews?${params}`, '/data/reviews.json');
 }
 
-export async function getReviewById(documentId) {
+export async function getReviewById(idOrDocId) {
+  const isDocId = isNaN(Number(idOrDocId));
+  const path = isDocId
+    ? `/reviews?filters[documentId][$eq]=${encodeURIComponent(idOrDocId)}&populate=coverImage`
+    : `/reviews/${idOrDocId}?populate=coverImage`;
+
   try {
-    const { data } = await api.get('/reviews', {
-      params: {
-        populate: 'coverImage',
-        'filters[documentId][$eq]': documentId,
-        'pagination[pageSize]': 1,
-      },
-      paramsSerializer: (p) => new URLSearchParams(p).toString(),
-    });
-
-    const item = Array.isArray(data?.data) ? data.data[0] : null;
-
-    if (!item && /^\d+$/.test(String(documentId))) {
-      const { data: byNumeric } = await api.get(`/reviews/${documentId}`, {
-        params: { populate: 'coverImage' },
-      });
-      return { data: byNumeric?.data ?? null };
-    }
-
-    return { data: item ?? null };
+    const { data } = await api.get(path);
+    const item = isDocId ? (data?.data?.[0] ?? null) : data?.data ?? null;
+    console.log('[api] detail LIVE ok', { isDocId, idOrDocId, hit: !!item });
+    return { data: item };
   } catch (e) {
     try {
-      const json = await fetch('/data/reviews.json').then((r) => r.json());
+      const json = await fetch('/data/reviews.json').then(r => r.json());
       const list = Array.isArray(json?.data) ? json.data : [];
-      const item =
-        list.find((it) => String(it?.documentId) === String(documentId)) ||
-        list.find((it) => String(it?.id) === String(documentId));
-      return { data: item ?? null };
+      const item = list.find(it =>
+        String(it?.id) === String(idOrDocId) || String(it?.documentId) === String(idOrDocId)
+      ) || null;
+      console.log('[api] detail CACHE', { isDocId, idOrDocId, hit: !!item });
+      return { data: item };
     } catch (e2) {
       console.error('[api detail] live & cache failed', e, e2);
       return { data: null };
     }
   }
+}
+
+export function toMediaUrl(path) {
+  if (!path) return '';
+  if (String(path).startsWith('http')) return path;
+  return `${API_URL}${path}`;
 }
