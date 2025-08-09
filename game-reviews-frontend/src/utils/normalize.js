@@ -1,16 +1,22 @@
 import { toMediaUrl } from '../api/api';
 
 export function normalizeReview(item) {
-  const a = item?.attributes ?? {};
-  const coverUrl = a?.coverImage?.data?.attributes?.url ?? '';
+  const a = item?.attributes ?? item ?? {};
+
+  const coverUrl =
+    a?.coverImage?.data?.attributes?.url ??
+    a?.coverImage?.url ??
+    a?.cover ??
+    '';
 
   return {
-    id: item?.id ?? '',
+    id: item?.id ?? a?.id ?? '',
     title: a?.title ?? '',
-    excerpt: a?.excerpt ?? '',
-    rating: a?.rating ?? '',
     platform: a?.platform ?? '',
-    publishedAt: a?.publishedAt ?? '',
+    rating: a?.rating ?? '',
+    excerpt: a?.excerpt ?? '',
+    content: a?.content ?? null,  
     cover: coverUrl ? toMediaUrl(coverUrl) : '',
+    publishedAt: a?.publishedAt ?? '',
   };
 }

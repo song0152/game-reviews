@@ -2,7 +2,7 @@
   <article class="card">
     <img v-if="r.cover" :src="r.cover" alt="" class="cover" />
     <div class="body">
-      <h3 class="title">{{ r.title }}</h3>
+      <h3 class="title">{{ r.title || '(no title)' }}</h3>
       <p class="excerpt">{{ shortExcerpt }}</p>
 
       <div class="meta">
@@ -14,19 +14,19 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { normalizeReview } from '../utils/normalize'
+import { computed } from 'vue';
+import { normalizeReview } from '../utils/normalize';
 
 const props = defineProps({
   review: { type: Object, default: () => ({}) }
-})
+});
 
-const r = computed(() => normalizeReview(props.review))
+const r = computed(() => normalizeReview(props.review));
 
 const shortExcerpt = computed(() => {
-  const text = String(r.value.excerpt || '')
-  return text.length > 120 ? `${text.slice(0, 120)}…` : text
-})
+  const t = String(r.value.excerpt || '');
+  return t.length > 120 ? `${t.slice(0, 120)}…` : t;
+});
 </script>
 
 <style scoped>
