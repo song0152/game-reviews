@@ -1,16 +1,25 @@
 <template>
   <RouterLink
-    :to="{ name: 'review', params: { id: review.id || review.documentId } }"
+    :to="routeTo"
     class="card"
-    aria-label="Open review detail"
+    :aria-label="`Open review detail: ${safeTitle}`"
   >
-    <img v-if="coverUrl" :src="coverUrl" alt="" class="cover" />
+    <img
+      v-if="coverUrl"
+      :src="coverUrl"
+      :alt="`${safeTitle} cover`"
+      class="cover"
+      loading="lazy"
+      decoding="async"
+    />
+
     <div class="body">
-      <h3 class="title">{{ review.title }}</h3>
-      <p class="excerpt">{{ shortExcerpt }}</p>
+      <h3 class="title">{{ safeTitle }}</h3>
+      <p v-if="shortExcerpt" class="excerpt">{{ shortExcerpt }}</p>
+
       <div class="meta">
         <span v-if="review.platform">{{ review.platform }}</span>
-        <span v-if="review.rating">⭐ {{ review.rating }}</span>
+        <span v-if="hasRating">⭐ {{ review.rating }}</span>
       </div>
     </div>
   </RouterLink>
@@ -25,11 +34,25 @@ const props = defineProps({
   review: { type: Object, required: true }
 })
 
+const reviewId = computed(() => props.review?.id ?? props.review?.documentId)
+
+const routeTo = computed(() => ({
+  name: 'review',
+  params: { id: reviewId.value }
+}))
+
+const safeTitle = computed(() => String(props.review?.title || 'Untitled'))
+
 const coverUrl = computed(() => toMediaUrl(props.review?.cover))
 
 const shortExcerpt = computed(() => {
   const t = String(props.review?.excerpt || '')
-  return t.length > 120 ? `${t.slice(0, 120)}…` : t
+  return t ? (t.length > 120 ? `${t.slice(0, 120)}…` : t) : ''
+})
+
+const hasRating = computed(() => {
+  const r = props.review?.rating
+  return r !== null && r !== undefined && r !== ''
 })
 </script>
 
